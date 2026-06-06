@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - "-std=gnu++17"
+    - "-DPLATFORMIO=1"
+  Remove:
+    - "-Werror"

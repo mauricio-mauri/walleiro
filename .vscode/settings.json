@@ -1,0 +1,18 @@
+{
+    // Desativa o IntelliSense do Microsoft C/C++ (cpptools)
+    // para evitar conflito com o Clangd embutido do PlatformIO IDE
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.autocomplete": "disabled",
+    "C_Cpp.errorSquiggles": "disabled",
+
+    // Impede o cpptools de reivindicar arquivos C/C++
+    "C_Cpp.workspaceSymbols": "disabled",
+
+    // Formatação C++ com o clang-format do PlatformIO
+    "[cpp]": {
+        "editor.defaultFormatter": "platformio.platformio-ide"
+    },
+
+    // Esconde warnings do cpptools sobre o engine desabilitado
+    "C_Cpp.enhancedColorization": "disabled"
+}

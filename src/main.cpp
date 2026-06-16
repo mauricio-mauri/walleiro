@@ -5,6 +5,7 @@
   #include <WiFi.h>
 #else
   #include <ESP8266WiFi.h>
+  #include <DebugLog.h>
 #endif
 
 #include <pins.h>
@@ -22,10 +23,18 @@ Robot robot(motors, sensor, -1);
 
 // ─── Setup ──────────────────────────────────────────────
 void setup() {
+  #ifdef ESP8266
+    Debug.begin();
+  #else
+    Serial.begin(115200);
+  #endif
   robot.setup();
 }
 
 // ─── Loop Principal ─────────────────────────────────────
 void loop() {
+  #ifdef ESP8266
+    Debug.handleClient();
+  #endif
   robot.update();
 }

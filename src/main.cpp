@@ -17,11 +17,8 @@
 MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 
-#ifdef ESP32
-  Robot robot(motors, sensor);
-#else
-  Robot robot(motors, sensor, IR_PIN);
-#endif
+// IR sensor desativado — passar -1 como irPin
+Robot robot(motors, sensor, -1);
 
 // ─── Setup ──────────────────────────────────────────────
 void setup() {

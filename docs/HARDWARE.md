@@ -10,7 +10,7 @@
 | TB6612FNG (HW-166) | 1 | Driver de motor (ponte H MOSFET) |
 | Motor DC 3-6V 200 RPM | 2 | Tração diferencial |
 | HC-SR04 | 1 | Sensor ultrassônico |
-| HW-201 | 1 | Sensor infravermelho (desconectado) |
+| HW-201 | 1 | Sensor infravermelho (logicamente desconectado) |
 | Power Bank GoPro 5V | 1 | Alimentação |
 
 ### Desconectados (disponíveis)
@@ -20,6 +20,7 @@
 - Servo motor
 - Capacitor
 - Motor DC 3-6V 200 RPM (reserva)
+- HW-201 - Sensor infravermelho (4 disponíveis)
 
 ---
 
@@ -28,10 +29,11 @@
 ```
 Power Bank 5V
   │
-  ├── USB micro ── NodeMCU VIN (via conector USB)
-  │
   └── Cabo USB cortado
-        ├── VERMELHO ── TB6612 VM  (+5V motores)
+        ├── VERMELHO ── 5V (breadboard +)
+        │                ├── NodeMCU VIN
+        │                └── TB6612 VM
+        │
         └── PRETO    ── GND comum  (breadboard -)
 ```
 
@@ -40,7 +42,7 @@ Power Bank 5V
 | NodeMCU VIN | 5V (power bank) | NodeMCU (regulador 3.3V interno) |
 | NodeMCU 3V3 | 3.3V | HC-SR04 VCC, HW-201 VCC |
 | NodeMCU VU | ~4.7V | TB6612 VCC (lógica) |
-| Power Bank (cabo cortado) | 5V | TB6612 VM (motores) |
+| Power Bank (cabo cortado) | 5V | Breadboard → NodeMCU VIN, TB6612 VM (motores) |
 
 ### Por que 3.3V nos sensores?
 
@@ -49,7 +51,7 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 | Com 5V | Com 3.3V |
 |--------|----------|
 | ECHO e OUT = 5V → precisa de divisor de tensão | ECHO e OUT = 3.3V → direto no GPIO ✅ |
-| Alcance total do HC-SR04 (~4m) | Alcance reduzido (~1m — suficiente) |
+| Alcance total do HC-SR04 (~4m) | Alcance reduzido (~2m) |
 
 **Ganho:** sem resistores extras, sem risco de queimar o pino do ESP8266.
 
@@ -61,11 +63,11 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 
 | Pino | GPIO | Destino | Componente | Fio |
 |------|------|---------|------------|-----|
-| VIN | — | 5V | Power Bank (USB) | Vermelho |
-| GND | — | GND | Power Bank / breadboard | Preto |
+| VIN | — | 5V | Power Bank | Vermelho |
+| GND | — | GND | Power Bank | Preto |
 | 3V3 | — | VCC, VCC | HC-SR04, HW-201 | Marrom |
 | VU | — | VCC, STBY | TB6612FNG | Branco |
-| D0 | 16 | OUT | HW-201 (não ligado) | Cinza |
+| D0 | 16 | OUT | HW-201 | Cinza |
 | D1 | 5 | TRIG | HC-SR04 | Laranja |
 | D2 | 4 | ECHO | HC-SR04 | Cinza |
 | D3 | 0 | BIN1 | TB6612FNG | Amarelo |
@@ -79,9 +81,9 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 
 | Pino TB6612 | Conecta em | Componente | Fio |
 |-------------|------------|------------|-----|
-| VM | 5V (cabo cortado) | Power Bank | Vermelho |
+| VM | 5V | Power Bank | Vermelho |
 | VCC | VU (NodeMCU) | ESP8266 | Branco |
-| GND | GND | Power Bank / breadboard | Preto |
+| GND | GND | Power Bank | Preto |
 | STBY | VU (NodeMCU) | ESP8266 | Branco |
 | A01 | Motor A fio 1 | Motor DC 1 | Azul |
 | A02 | Motor A fio 2 | Motor DC 1 | Azul |
@@ -103,7 +105,7 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 | TRIG | NodeMCU D1 | Laranja |
 | ECHO | NodeMCU D2 | Cinza |
 
-### HW-201 (não ligado)
+### HW-201 (desconectado logicamente)
 
 | Pino | Conecta em |
 |------|------------|

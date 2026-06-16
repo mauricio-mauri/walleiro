@@ -7,8 +7,9 @@
 
 ## 📋 Sobre o Projeto
 
-O **Walleiro** é um robô móvel que segue uma trajetória predefinida enquanto desvia
-de obstáculos com um sensor ultrassônico.
+O **Walleiro** é um robô móvel que segue uma trajetória predefinida
+enquanto desvia de obstáculos com sensor ultrassônico HC-SR04, usando
+o driver **TB6612FNG** para controle dos motores DC.
 
 ```
         ┌──────────────────┐
@@ -22,69 +23,101 @@ de obstáculos com um sensor ultrassônico.
      ┌─────┘      │      └──────┐
      ▼            ▼             ▼
  ┌────────┐ ┌────────┐ ┌────────────┐
- │ L298N  │ │HC-SR04 │ │ Power Bank │
- │Driver  │ │Ultrassom│ │   5V       │
- │Motores │ │        │ │            │
+ │TB6612  │ │HC-SR04 │ │ Power Bank │
+ │FNG     │ │Ultrassom│ │   5V       │
+ │Driver  │ │        │ │            │
  └───┬────┘ └────────┘ └────────────┘
      │
      ├──── Motor DC A (esquerdo)
      └──── Motor DC B (direito)
 ```
 
-**Componentes principais e suas funções:**
+**Componentes principais:**
 
-- **NodeMCU v3 (ESP8266)** — microcontrolador que processa os dados do sensor e
-  decide para onde os motores devem girar
-- **L298N** — ponte H que permite controlar a direção e velocidade dos motores DC
-- **HC-SR04** — sensor ultrassônico que mede distância até obstáculos (2 cm a 4 m)
-- **Motores DC** — tração diferencial: cada roda tem seu próprio motor
-- **Power Bank 5V** — alimentação portátil para todo o sistema
+- **NodeMCU v3 (ESP8266)** — processa sensores, controla motores,
+  serve página web de debug via WiFi
+- **TB6612FNG** — ponte H MOSFET com queda de ~0,2V (eficiência
+  muito superior ao L298N, que perdia ~2V)
+- **HC-SR04** — sensor ultrassônico (alimentado em 3.3V, ECHO
+  compatível com GPIO direto)
+- **Motores DC** — tração diferencial
+- **Power Bank 5V** — alimentação portátil
 
 **Duas formas de trabalhar:**
 
 | Ambiente | Placa | Finalidade |
 |----------|-------|------------|
-| Simulação (Wokwi) | ESP32 | Testar lógica e sensores sem hardware |
+| Simulação (Wokwi) | ESP32 | Testar lógica sem hardware |
 | Físico | ESP8266 NodeMCU v3 | Rodar no robô real |
 
-O código é **único** (`src/main.cpp`) e usa `#ifdef ESP32` para compilar o trecho
-certo para cada placa.
+O código é **único** (`src/main.cpp`) e usa `#ifdef ESP32` para compilar
+o trecho certo para cada placa.
+
+---
+
+## 📡 Debug sem fio (WiFi AP)
+
+O robô cria a própria rede WiFi no boot:
+
+| Parâmetro | Valor |
+|-----------|-------|
+| SSID | `Walleiro` |
+| Senha | `12345678` |
+| IP | `192.168.4.1` |
+| Porta | 80 (HTTP) |
+
+**Uso:**
+
+1. Alimente o robô pela power bank
+2. Conecte o celular/PC na rede `Walleiro`
+3. Abra o navegador em `http://192.168.4.1/`
+4. Veja as distâncias e eventos atualizando a cada 1 segundo
+
+> Quando conectado ao PC via USB, o log também aparece no Serial Monitor
+> (115200 baud).
 
 ---
 
 ## 🔌 Pinagem
 
+### NodeMCU v3 (placa física)
+
+| GPIO | Pino | Sinal | Componente |
+|------|------|-------|------------|
+| 5 | D1 | TRIG | HC-SR04 |
+| 4 | D2 | ECHO | HC-SR04 |
+| 14 | D5 | AIN1 | TB6612FNG |
+| 12 | D6 | AIN2 | TB6612FNG |
+| 13 | D7 | PWMA | TB6612FNG |
+| 0 | D3 | BIN1 | TB6612FNG |
+| 2 | D4 | BIN2 | TB6612FNG |
+| 15 | D8 | PWMB | TB6612FNG |
+| 16 | D0 | IR_PIN | HW-201 (futuro) |
+
+**Alimentação:**
+
+| Pino NodeMCU | Tensão | Alimenta |
+|-------------|--------|----------|
+| VIN | 5V | NodeMCU (via power bank USB) |
+| VU | ~4,7V | TB6612 VCC + STBY |
+| 3V3 | 3,3V | HC-SR04 VCC, HW-201 VCC |
+| GND | 0V | Comum a todos os módulos |
+
 ### ESP32 (simulação Wokwi)
 
-| Sinal  | GPIO | Componente  | Fio (diagram.json) |
-|--------|------|-------------|--------------------|
-| TRIG   | 18   | HC-SR04     | Verde              |
-| ECHO   | 19   | HC-SR04     | Amarelo            |
-| IN1    | 25   | L298N       | Laranja            |
-| IN2    | 26   | L298N       | Laranja            |
-| IN3    | 27   | L298N       | Laranja            |
-| IN4    | 14   | L298N       | Laranja            |
-| ENA    | 32   | L298N (PWM) | Roxo               |
-| ENB    | 33   | L298N (PWM) | Roxo               |
+| GPIO | Sinal | Componente |
+|------|-------|------------|
+| 18 | TRIG | HC-SR04 |
+| 19 | ECHO | HC-SR04 |
+| 25 | AIN1 | TB6612FNG (LED no diagrama) |
+| 26 | AIN2 | TB6612FNG |
+| 32 | PWMA | TB6612FNG (LED indicador) |
+| 27 | BIN1 | TB6612FNG |
+| 14 | BIN2 | TB6612FNG |
+| 33 | PWMB | TB6612FNG (LED indicador) |
 
-### NodeMCU v3 (placa física) — Pinagem Inicial
-
-Ainda estamos definindo os pinos do circuito real. Por enquanto,
-usamos apenas estes para o **primeiro teste com 1 motor DC**:
-
-| Sinal | GPIO | Silkscreen |
-|-------|------|------------|
-| IN1   | 14   | D5         |
-| IN2   | 12   | D6         |
-| ENA   | 13   | D7         |
-
-> ⚠️ Os pinos de TRIG, ECHO, IN3, IN4 e ENB serão definidos quando os
-> componentes adicionais forem montados.
-
-**Por que os números mudam?**
-
-O ESP32 e o ESP8266 têm GPIOs diferentes. O `#ifdef ESP32` no código
-resolve isso: cada placa usa seus próprios números na compilação.
+> Na simulação, os motores DC são representados por LEDs nos pinos
+> PWM (32 e 33). O Wokwi não tem modelos de motor DC.
 
 ---
 
@@ -113,7 +146,7 @@ No VS Code: **File > Open Folder** → selecione a pasta `walleiro`.
 O PlatformIO reconhece automaticamente o projeto e baixa as toolchains
 necessárias na primeira compilação.
 
-### 5. Primeira compilação
+### 5. Compilar
 
 ```bash
 # Simulação (ESP32)
@@ -128,69 +161,6 @@ pio run -e nodemcuv2
 
 ---
 
-## 🚀 Primeiros Passos — Teste do ESP8266
-
-Antes de montar qualquer circuito, vamos verificar se o NodeMCU v3
-está funcionando.
-
-### Materiais necessários
-
-- NodeMCU v3 (ESP8266)
-- Cabo USB micro
-
-### Conexão
-
-```
-USB do PC
-  │
-  └── NodeMCU v3 (porta micro USB)
-```
-
-**Apenas o ESP conectado ao computador. Nenhum outro componente.**
-
-### Código de teste
-
-```cpp
-#include <Arduino.h>
-
-void setup() {
-  Serial.begin(115200);
-  pinMode(LED_BUILTIN, OUTPUT);  // GPIO2 / D4
-}
-
-void loop() {
-  digitalWrite(LED_BUILTIN, LOW);   // Liga LED (ativo LOW)
-  Serial.println("ESP8266 vivo!");
-  delay(500);
-  digitalWrite(LED_BUILTIN, HIGH);  // Desliga LED
-  delay(500);
-}
-```
-
-### Procedimento
-
-1. Substitua o conteúdo de `src/main.cpp` pelo código acima
-2. Compile e faça upload:
-
-   ```bash
-   pio run -e nodemcuv2 --target upload
-   ```
-
-3. Abra o monitor serial:
-
-   ```bash
-   pio device monitor -b 115200
-   ```
-
-### O que esperar
-
-- LED azul na placa piscando a cada 1 segundo
-- Mensagem `ESP8266 vivo!` aparecendo a cada segundo no monitor serial
-
-> Para restaurar o código original depois: `git checkout src/main.cpp`
-
----
-
 ## 🚀 Comandos Úteis
 
 | Ação | Comando |
@@ -200,7 +170,6 @@ void loop() {
 | Upload ESP8266 | `pio run -e nodemcuv2 --target upload` |
 | Upload com porta específica | `pio run -e nodemcuv2 --target upload --upload-port /dev/ttyUSB0` |
 | Monitor serial | `pio device monitor -b 115200` |
-| Monitor serial (porta específica) | `pio device monitor -b 115200 -p /dev/ttyUSB0` |
 | Limpar build | `pio run --target clean` |
 | Simular Wokwi | `wokwi` |
 
@@ -222,9 +191,8 @@ main  (protegida — não commitar direto)
 git checkout -b joao/teste-motor
 
 # 2. Fazer alterações
-# ...
 git add .
-git commit -m ":sparkles: feat: teste de motor DC com L298N"
+git commit -m ":sparkles: feat: teste de motor DC com TB6612FNG"
 
 # 3. Enviar para o GitHub
 git push -u origin joao/teste-motor
@@ -254,20 +222,18 @@ git push -u origin joao/teste-motor
 git commit -m ":sparkles: feat: controle PWM dos motores"
 git commit -m ":books: docs: atualização do README"
 git commit -m ":bug: fix: correção na leitura do sensor"
-git commit -m ":construction: Em progresso"
 ```
 
-**Importante:** a pasta `.pio/` (build artifacts) está no `.gitignore`
-e **nunca** deve ser commitada.
+> A pasta `.pio/` está no `.gitignore` e **nunca** deve ser commitada.
 
 ---
 
 ## 🧪 Simulação Wokwi
 
-Wokwi é um simulador de circuitos online que roda dentro do VS Code.
+Wokwi é um simulador de circuitos que roda dentro do VS Code.
 Ele permite testar o código **sem precisar do hardware físico**.
 
-**Limitação importante:** o Wokwi só simula ESP32, não ESP8266.
+**Limitação:** o Wokwi só simula ESP32, não ESP8266.
 Por isso o projeto tem dois ambientes de compilação.
 
 **Como usar:**
@@ -276,21 +242,17 @@ Por isso o projeto tem dois ambientes de compilação.
 # 1. Compile o firmware para ESP32
 pio run
 
-# 2. Inicie a simulação
-wokwi
+# 2. Inicie a simulação (VS Code → aba Wokwi → Start)
 ```
 
 O arquivo `diagram.json` define os componentes e conexões do circuito
-simulado. A configuração está em `wokwi.toml`.
+simulado.
 
 **Fluxo recomendado:**
 
 ```
-1. Edita o código em src/main.cpp
-2. Compila (pio run)
-3. Simula (wokwi)
-4. Testa o comportamento
-5. Se funcionar → compila pra ESP8266 e faz upload na placa real
+Edita código → Compila (pio run) → Simula (Wokwi) → Testa
+→ Se funcionar: compila pra ESP8266 → upload na placa real
 ```
 
 ---
@@ -300,7 +262,6 @@ simulado. A configuração está em `wokwi.toml`.
 ### Erro de permissão na porta USB
 
 ```bash
-# Adicione seu usuário ao grupo dialout
 sudo usermod -a -G dialout $USER
 # (Reinicie a sessão depois)
 ```
@@ -317,12 +278,11 @@ O ESP8266 pode estar em modo de boot incorreto. Tente:
 ### Wokwi não abre
 
 - Verifique se a extensão "Wokwi for VS Code" está instalada
-- Verifique se o arquivo `.pio/build/esp32_sim/firmware.bin` existe
-  (rode `pio run` antes do `wokwi`)
+- Verifique se `pio/build/esp32_sim/firmware.bin` existe (rode `pio run`)
 
 ### Monitor serial não mostra nada
 
-- Confirme que a porta está correta: `ls /dev/ttyUSB*`
+- Confirme a porta: `ls /dev/ttyUSB*`
 - Confirme o baud rate: `-b 115200`
 - O ESP pode estar em reset loop — aperte RST
 
@@ -333,18 +293,23 @@ O ESP8266 pode estar em modo de boot incorreto. Tente:
 ```
 walleiro/
 ├── src/
-│   └── main.cpp          # Código-fonte único (ifdef pra cada placa)
-├── lib/                   # Bibliotecas privadas (opcional)
-│   └── README
-├── include/               # Headers (opcional)
-│   └── README
-├── test/                  # Testes (opcional)
-│   └── README
-├── diagram.json           # Circuito da simulação Wokwi
-├── wokwi.toml             # Configuração do Wokwi
-├── platformio.ini         # Configuração de build (2 envs)
-├── .gitignore             # Arquivos ignorados pelo git
-└── README.md              # Este arquivo
+│   └── main.cpp              # Código-fonte único
+├── lib/
+│   ├── MotorController/      # Driver TB6612FNG
+│   ├── UltrasonicSensor/     # Sensor HC-SR04
+│   ├── Robot/                # Lógica de navegação
+│   └── DebugLog/             # Debug USB + WiFi AP
+├── include/
+│   └── pins.h                # Definição de pinos
+├── docs/
+│   ├── ARCHITECTURE.md       # Arquitetura do firmware
+│   ├── API.md                # Referência das classes
+│   └── HARDWARE.md           # Montagem e ligações
+├── test/                     # (vazio — sem testes ainda)
+├── diagram.json              # Circuito Wokwi
+├── wokwi.toml                # Configuração Wokwi
+├── platformio.ini            # Build (2 envs)
+└── README.md                 # Este arquivo
 ```
 
 ---
@@ -353,17 +318,12 @@ walleiro/
 
 | Componente | Quantidade | Função |
 |------------|:----------:|--------|
-| NodeMCU v3 (ESP8266) | 1 | Microcontrolador — processa sensores e controla motores |
-| L298N | 1 | Ponte H — permite inverter direção e controlar velocidade dos motores DC |
-| Motor DC | 2 | Tração diferencial (uma roda em cada lado) |
-| HC-SR04 | 1 | Sensor ultrassônico — mede distância até obstáculos |
-| Power Bank 5V | 1 | Alimentação portátil do sistema |
-| Jumpers (macho-macho e macho-fêmea) | vários | Conexões entre componentes |
-
-<!-- FOTO: componentes_individuais.jpg -->
-
-> **Nota:** fotos da montagem passo a passo serão adicionadas assim que
-> o circuito físico for montado.
+| NodeMCU v3 (ESP8266) | 1 | Microcontrolador |
+| TB6612FNG | 1 | Driver ponte H MOSFET |
+| Motor DC 3-6V | 2 | Tração diferencial |
+| HC-SR04 | 1 | Sensor ultrassônico |
+| HW-201 | 1 | Sensor infravermelho |
+| Power Bank 5V | 1 | Alimentação |
 
 ---
 
@@ -382,11 +342,10 @@ walleiro/
 
 ## 📚 Referências
 
-- [L298N Datasheet](https://www.st.com/resource/en/datasheet/l298.pdf)
+- [TB6612FNG Datasheet](https://www.sparkfun.com/datasheets/Robotics/TB6612FNG.pdf)
 - [HC-SR04 Datasheet](https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf)
 - [ESP8266 NodeMCU v3 Pinout](https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/)
 - [ESP32 DevKit v4 Pinout](https://raw.githubusercontent.com/espressif/ESP8266_MP3_Decoder/master/pinout/ESP32-pinout.png)
 - [Wokwi — Simulação de IoT](https://wokwi.com)
 - [PlatformIO Docs](https://docs.platformio.org)
-- [Conventional Commits](https://www.conventionalcommits.org/pt-br)
 - [iuricode/padroes-de-commits](https://github.com/iuricode/padroes-de-commits)

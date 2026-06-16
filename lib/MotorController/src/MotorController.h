@@ -4,21 +4,23 @@
 
 /**
  * @file MotorController.h
- * @brief Abstração do driver de motor L298N (ponte H).
+ * @brief Abstração do driver de motor TB6612FNG / L298N (ponte H).
  *
  * Controla dois motores DC com direção e velocidade independentes
- * via 4 pinos de controle (IN1–IN4) e 2 pinos PWM (ENA, ENB).
+ * via 4 pinos de controle (AIN1–BIN2) e 2 pinos PWM (PWMA, PWMB).
+ *
+ * Compatível com TB6612FNG e L298N — a lógica de controle é idêntica.
  */
 
 class MotorController {
 public:
   /**
-   * @param in1  Pino IN1 do L298N (motor A)
-   * @param in2  Pino IN2 do L298N (motor A)
-   * @param ena  Pino ENA do L298N (PWM — motor A)
-   * @param in3  Pino IN3 do L298N (motor B)
-   * @param in4  Pino IN4 do L298N (motor B)
-   * @param enb  Pino ENB do L298N (PWM — motor B)
+   * @param in1  Pino AIN1 / IN1 (motor A, direção)
+   * @param in2  Pino AIN2 / IN2 (motor A, direção)
+   * @param ena  Pino PWMA / ENA (motor A, PWM)
+   * @param in3  Pino BIN1 / IN3 (motor B, direção)
+   * @param in4  Pino BIN2 / IN4 (motor B, direção)
+   * @param enb  Pino PWMB / ENB (motor B, PWM)
    */
   MotorController(uint8_t in1, uint8_t in2, uint8_t ena,
                   uint8_t in3, uint8_t in4, uint8_t enb);

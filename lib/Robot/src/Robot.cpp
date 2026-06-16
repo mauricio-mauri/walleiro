@@ -1,17 +1,31 @@
 #include "Robot.h"
 
-Robot::Robot(MotorController& motors, UltrasonicSensor& sensor)
-  : _motors(motors), _sensor(sensor) {}
+Robot::Robot(MotorController& motors, UltrasonicSensor& sensor, int irPin)
+  : _motors(motors), _sensor(sensor), _irPin(irPin) {}
 
 void Robot::setup() {
   Serial.begin(115200);
   _motors.begin();
   _motors.setSpeed(VELOCIDADE);
   _motors.stop();
+  if (_irPin >= 0) {
+    pinMode(_irPin, INPUT);
+  }
   Serial.println("Robô iniciado.");
 }
 
 void Robot::update() {
+  // ─── Sensor IR (obstáculo imediato) ───────────────
+  if (_irPin >= 0 && digitalRead(_irPin) == LOW) {
+    Serial.println("IR: obstáculo detectado!");
+    _motors.stop();
+    delay(TEMPO_PAUSA);
+    _motors.turnLeft();
+    delay(TEMPO_CURVA);
+    return;
+  }
+
+  // ─── Sensor ultrassônico ─────────────────────────
   unsigned int distancia = _sensor.readDistance();
 
   Serial.print("Distancia: ");

@@ -8,8 +8,8 @@
  * @file Robot.h
  * @brief Lógica de alto nível do robô seguidor de trajetória.
  *
- * Coordena os módulos de motor e sensor para executar a
- * trajetória e desviar de obstáculos.
+ * Coordena os módulos de motor, sensor ultrassônico e sensor IR
+ * para executar a trajetória e desviar de obstáculos.
  */
 
 class Robot {
@@ -17,23 +17,25 @@ public:
   /**
    * @param motors Referência para o controlador de motores
    * @param sensor Referência para o sensor ultrassônico
+   * @param irPin  Pino do sensor IR (HW-201), ou -1 se não usado
    */
-  Robot(MotorController& motors, UltrasonicSensor& sensor);
+  Robot(MotorController& motors, UltrasonicSensor& sensor, int irPin = -1);
 
-  /// Inicializa robô (serial, delay inicial).
+  /// Inicializa robô (serial, delay inicial, pinMode do IR).
   void setup();
 
   /**
    * @brief Executa um ciclo do comportamento do robô.
    *
-   * Lê o sensor, decide entre avançar, desviar ou parar.
-   * Deve ser chamado dentro de loop().
+   * Lê o sensor IR primeiro (obstáculo imediato), depois o
+   * sensor ultrassônico, e decide entre avançar, desviar ou parar.
    */
   void update();
 
 private:
   MotorController& _motors;
   UltrasonicSensor& _sensor;
+  int _irPin;
 
   // Parâmetros de navegação
   static constexpr uint8_t VELOCIDADE      = 180;

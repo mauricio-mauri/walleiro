@@ -8,42 +8,45 @@ Define os pinos físicos para cada placa. Inclua com:
 #include <pins.h>
 ```
 
-### Constantes (ESP32)
+### Constantes (ESP32 — Wokwi)
 
 | Constante | GPIO | Função |
 |-----------|------|--------|
 | `TRIG_PIN` | 18 | Trigger do HC-SR04 |
 | `ECHO_PIN` | 19 | Echo do HC-SR04 |
 | `MAX_DISTANCE` | — | Alcance máximo do sensor (200 cm) |
-| `IN1` | 25 | Motor A — Entrada 1 do L298N |
-| `IN2` | 26 | Motor A — Entrada 2 do L298N |
-| `ENA` | 32 | Motor A — Enable/PWM |
-| `IN3` | 27 | Motor B — Entrada 3 do L298N |
-| `IN4` | 14 | Motor B — Entrada 4 do L298N |
-| `ENB` | 33 | Motor B — Enable/PWM |
+| `AIN1` | 25 | Motor A — direção (TB6612) |
+| `AIN2` | 26 | Motor A — direção (TB6612) |
+| `PWMA` | 32 | Motor A — PWM (TB6612) |
+| `BIN1` | 27 | Motor B — direção (TB6612) |
+| `BIN2` | 14 | Motor B — direção (TB6612) |
+| `PWMB` | 33 | Motor B — PWM (TB6612) |
 
-### Constantes (ESP8266 — provisório)
-
-Os valores abaixo são **provisórios** e devem ser ajustados ao montar
-o circuito físico. Veja [`HARDWARE.md`](HARDWARE.md) quando disponível.
+### Constantes (ESP8266 — NodeMCU v3)
 
 | Constante | GPIO | Silkscreen |
 |-----------|------|------------|
 | `TRIG_PIN` | 5 | D1 |
 | `ECHO_PIN` | 4 | D2 |
 | `MAX_DISTANCE` | — | 200 cm |
-| `IN1` | 14 | D5 |
-| `IN2` | 12 | D6 |
-| `ENA` | 13 | D7 |
-| `IN3` | 2 | D4 |
-| `IN4` | 15 | D8 |
-| `ENB` | 0 | D3 |
+| `AIN1` | 14 | D5 |
+| `AIN2` | 12 | D6 |
+| `PWMA` | 13 | D7 (PWM) |
+| `BIN1` | 0 | D3 |
+| `BIN2` | 2 | D4 |
+| `PWMB` | 15 | D8 (PWM) |
+| `IR_PIN` | 16 | D0 (comentado — ativar quando ligar) |
+
+> `IR_PIN` está comentado por padrão. Descomente em `pins.h` e
+> passe `IR_PIN` em vez de `-1` no construtor do `Robot` quando
+> o sensor HW-201 estiver conectado.
 
 ---
 
 ## `MotorController`
 
-Abstração do driver de motor L298N para dois motores DC.
+Abstração do driver de motor **TB6612FNG** (compatível com L298N)
+para dois motores DC.
 
 ### includes
 
@@ -62,19 +65,19 @@ Cria o controlador. **Não mexe no hardware** — chame `begin()` depois.
 
 **Parâmetros:**
 
-| Parâmetro | Pino no L298N | Função |
-|-----------|---------------|--------|
-| `in1` | IN1 | Controle de direção do motor A |
-| `in2` | IN2 | Controle de direção do motor A |
-| `ena` | ENA | PWM de velocidade do motor A |
-| `in3` | IN3 | Controle de direção do motor B |
-| `in4` | IN4 | Controle de direção do motor B |
-| `enb` | ENB | PWM de velocidade do motor B |
+| Parâmetro | Pino TB6612 | Função |
+|-----------|-------------|--------|
+| `in1` | AIN1 | Controle de direção do motor A |
+| `in2` | AIN2 | Controle de direção do motor A |
+| `ena` | PWMA | PWM de velocidade do motor A |
+| `in3` | BIN1 | Controle de direção do motor B |
+| `in4` | BIN2 | Controle de direção do motor B |
+| `enb` | PWMB | PWM de velocidade do motor B |
 
 **Exemplo:**
 
 ```cpp
-MotorController motors(IN1, IN2, ENA, IN3, IN4, ENB);
+MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 ```
 
 ### `begin()`
@@ -92,8 +95,8 @@ Deve ser chamado dentro de `setup()`.
 void forward();
 ```
 
-Ambos os motores giram para frente na velocidade atual (`IN1=HIGH,
-IN2=LOW, IN3=HIGH, IN4=LOW`).
+Ambos os motores giram para frente na velocidade atual (`AIN1=HIGH,
+AIN2=LOW, BIN1=HIGH, BIN2=LOW`).
 
 ### `backward()`
 
@@ -101,8 +104,8 @@ IN2=LOW, IN3=HIGH, IN4=LOW`).
 void backward();
 ```
 
-Ambos os motores giram para trás na velocidade atual (`IN1=LOW,
-IN2=HIGH, IN3=LOW, IN4=HIGH`).
+Ambos os motores giram para trás na velocidade atual (`AIN1=LOW,
+AIN2=HIGH, BIN1=LOW, BIN2=HIGH`).
 
 ### `turnLeft()`
 
@@ -227,8 +230,9 @@ if (sensor.obstacleDetected(20)) {
 
 ## `Robot`
 
-Coordena os módulos de motor e sensor para executar o comportamento
-do robô seguidor de trajetória com desvio de obstáculos.
+Coordena os módulos de motor, sensor ultrassônico e sensor IR
+para executar o comportamento do robô seguidor de trajetória
+com desvio de obstáculos.
 
 ### includes
 
@@ -239,19 +243,20 @@ do robô seguidor de trajetória com desvio de obstáculos.
 ### Construtor
 
 ```cpp
-Robot(MotorController& motors, UltrasonicSensor& sensor);
+Robot(MotorController& motors, UltrasonicSensor& sensor, int irPin = -1);
 ```
 
 Recebe **referências** para o controlador de motores e o sensor.
-O `Robot` não é dono desses objetos — eles são criados em `main.cpp`
-e passados ao robô.
+O parâmetro `irPin` indica o pino do sensor HW-201; passe `-1`
+para desativar (padrão).
 
 **Exemplo:**
 
 ```cpp
-MotorController motors(IN1, IN2, ENA, IN3, IN4, ENB);
+MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
-Robot robot(motors, sensor);
+Robot robot(motors, sensor, -1);          // sem IR
+// Robot robot(motors, sensor, IR_PIN);   // com IR
 ```
 
 ### `setup()`
@@ -262,11 +267,14 @@ void setup();
 
 Inicializa o robô:
 
-1. `Serial.begin(115200)`
-2. `_motors.begin()`
-3. `_motors.setSpeed(VELOCIDADE)` — padrão 180
-4. `_motors.stop()`
-5. Imprime `Robô iniciado.` no serial
+1. `_motors.begin()`
+2. `_motors.setSpeed(VELOCIDADE)` — padrão 180
+3. `_motors.stop()`
+4. Se `_irPin >= 0`: `pinMode(_irPin, INPUT)`
+5. Imprime `Robô iniciado.` no log
+
+> O `Serial.begin()` é chamado pelo `DebugLog::begin()` em `main.cpp`,
+> não pelo `Robot::setup()`.
 
 ### `update()`
 
@@ -277,13 +285,15 @@ void update();
 Executa um ciclo completo do comportamento. Deve ser chamado dentro
 de `loop()`. A cada chamada:
 
-1. Lê a distância do sensor
-2. Imprime no serial
-3. Decide a ação:
+1. Se IR ativado e obstáculo detectado → `stop()`, pausa 300 ms,
+   `turnLeft()`, espera 400 ms, retorna
+2. Lê a distância do sensor ultrassônico
+3. Imprime no log
+4. Decide a ação:
    - **distância == 0 ou > 35 cm** → `forward()`
    - **distância < 15 cm** → `stop()`, pausa 300 ms, `turnLeft()`, espera 400 ms
    - **15–35 cm** → `forward()`
-4. Aguarda 50 ms
+5. Aguarda 50 ms
 
 ### Constantes internas (ajustáveis)
 
@@ -299,6 +309,82 @@ Para alterar, edite `lib/Robot/src/Robot.h`.
 
 ---
 
+## `DebugLog`
+
+Substitui o `Serial.print()` convencional por uma saída que vai
+simultaneamente para **Serial USB** e para uma **página web**
+servida via WiFi (Access Point).
+
+Só compilada para ESP8266. No ESP32 (Wokwi) usa `Serial` direto.
+
+### includes
+
+```cpp
+#include <DebugLog.h>
+```
+
+### Instância global
+
+```cpp
+extern DebugLog Debug;
+```
+
+Declarada em `DebugLog.cpp` — use `Debug` diretamente em qualquer
+arquivo que inclua o header.
+
+### `begin()`
+
+```cpp
+void begin(const char* ssid = "Walleiro", const char* pass = "12345678");
+```
+
+Inicializa:
+
+1. `Serial.begin(115200)`
+2. WiFi em modo **Access Point** com o SSID e senha fornecidos
+3. Servidor HTTP na porta 80
+
+Chame dentro de `setup()`.
+
+**Parâmetros:**
+
+| Parâmetro | Padrão | Descrição |
+|-----------|--------|-----------|
+| `ssid` | `"Walleiro"` | Nome da rede WiFi |
+| `pass` | `"12345678"` | Senha da rede (mín. 8 caracteres) |
+
+### `handleClient()`
+
+```cpp
+void handleClient();
+```
+
+Atende requisições HTTP. Deve ser chamado dentro de `loop()`.
+
+### `write()`, `print()`, `println()`
+
+```cpp
+size_t write(uint8_t c);
+```
+
+Implementa `Print::write()` — toda chamada escreve no Serial USB
+e no buffer circular de 50 linhas. Use `Debug.print()` e
+`Debug.println()` exatamente como usaria `Serial.print()`.
+
+### Página web
+
+Com o robô alimentado pela power bank, conecte o celular/PC na
+rede `Walleiro` (senha `12345678`) e acesse:
+
+```
+http://192.168.4.1/
+```
+
+A página exibe as últimas 50 linhas do log, atualizando a cada
+1 segundo.
+
+---
+
 ## Exemplo Completo
 
 ```cpp
@@ -308,15 +394,17 @@ Para alterar, edite `lib/Robot/src/Robot.h`.
 #include <UltrasonicSensor.h>
 #include <Robot.h>
 
-MotorController motors(IN1, IN2, ENA, IN3, IN4, ENB);
+MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
-Robot robot(motors, sensor);
+Robot robot(motors, sensor, -1);
 
 void setup() {
+  Debug.begin();
   robot.setup();
 }
 
 void loop() {
+  Debug.handleClient();
   robot.update();
 }
 ```

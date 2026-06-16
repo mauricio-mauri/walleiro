@@ -2,44 +2,50 @@
 
 /*
  * Definições dos pinos para cada placa.
- * ESP32 → usado na simulação Wokwi
+ * ESP32   → simulação Wokwi
  * ESP8266 → placa física (NodeMCU v3)
  *
- * ATENÇÃO: os pinos do ESP8266 são provisórios — ajuste ao montar o
- * circuito real e verificar problemas de boot (GPIO0, GPIO2, GPIO15).
+ * Driver de motor: TB6612FNG (HW-166).
+ * Convenção de nomenclatura: AIN1/AIN2/PWMA (motor A),
+ * BIN1/BIN2/PWMB (motor B) — compatível com os parâmetros
+ * do MotorController (in1, in2, ena, in3, in4, enb nessa ordem).
  */
 
 #ifdef ESP32
 
-  // ─── HC-SR04 ─────────────────────────────────────────
+  // ─── ESP32 (Wokwi) ────────────────────────────────────
   #define TRIG_PIN     18
   #define ECHO_PIN     19
-  #define MAX_DISTANCE 200    // cm
+  #define MAX_DISTANCE 200
 
-  // ─── L298N — Motor A (esquerdo) ──────────────────────
-  #define IN1          25
-  #define IN2          26
-  #define ENA          32     // PWM
-
-  // ─── L298N — Motor B (direito) ───────────────────────
-  #define IN3          27
-  #define IN4          14
-  #define ENB          33     // PWM
+  // TB6612FNG (emulado via LEDs no diagrama)
+  #define AIN1         25
+  #define AIN2         26
+  #define PWMA         32
+  #define BIN1         27
+  #define BIN2         14
+  #define PWMB         33
 
 #else
-  // ─── ESP8266 (NodeMCU v3) ────────────────────────────
-  // TODO: verificar pinagem ao montar o circuito físico
+  // ─── ESP8266 NodeMCU v3 (placa física) ─────────────────
 
-  #define TRIG_PIN     5      // D1
-  #define ECHO_PIN     4      // D2
-  #define MAX_DISTANCE 200    // cm
+  #define TRIG_PIN      5   // D1
+  #define ECHO_PIN      4   // D2
+  #define MAX_DISTANCE 200
 
-  #define IN1          14     // D5
-  #define IN2          12     // D6
-  #define ENA          13     // D7 (PWM)
+  // TB6612FNG — Motor A
+  #define AIN1         14   // D5
+  #define AIN2         12   // D6
+  #define PWMA         13   // D7 (PWM)
 
-  #define IN3          2      // D4
-  #define IN4          15     // D8
-  #define ENB          0      // D3 (PWM — verificar boot)
+  // TB6612FNG — Motor B
+  // BIN1 (D3) e BIN2 (D4) têm pullup no boot = HIGH.
+  // Mas PWMB (D8) tem pulldown = LOW → motor B desligado.
+  #define BIN1          0   // D3
+  #define BIN2          2   // D4
+  #define PWMB         15   // D8 (PWM)
+
+  // Sensor infravermelho HW-201 (desativado por enquanto)
+  // #define IR_PIN    16   // D0
 
 #endif

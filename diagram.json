@@ -5,8 +5,8 @@
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
     { "type": "wokwi-hc-sr04", "id": "ultrasonic", "top": -100, "left": 300, "attrs": {} },
-    { "type": "wokwi-servo", "id": "motorA", "top": 180, "left": 400, "attrs": {} },
-    { "type": "wokwi-servo", "id": "motorB", "top": 280, "left": 400, "attrs": {} }
+    { "type": "wokwi-led", "id": "ledA", "top": 180, "left": 300, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "ledB", "top": 280, "left": 300, "attrs": { "color": "red" } }
   ],
   "connections": [
     ["esp:TX", "$serialMonitor:RX", "", []],
@@ -14,7 +14,11 @@
     ["ultrasonic:VCC", "esp:3V3", "red", [ "*", "v-25"]],
     ["ultrasonic:GND", "esp:GND", "black", []],
     ["ultrasonic:TRIG", "esp:18", "green", ["v15"]],
-    ["ultrasonic:ECHO", "esp:19", "yellow", ["v20"]]
+    ["ultrasonic:ECHO", "esp:19", "yellow", ["v20"]],
+    ["esp:32", "ledA:A", "purple", []],
+    ["ledA:C", "esp:GND", "black", []],
+    ["esp:33", "ledB:A", "purple", []],
+    ["ledB:C", "esp:GND", "black", []]
   ],
   "dependencies": {}
 }

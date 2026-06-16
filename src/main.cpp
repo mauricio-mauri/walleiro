@@ -5,6 +5,7 @@
   #include <WiFi.h>
 #else
   #include <ESP8266WiFi.h>
+  #include <DebugLog.h>
 #endif
 
 #include <pins.h>
@@ -13,16 +14,27 @@
 #include <Robot.h>
 
 // ─── Instâncias Globais ────────────────────────────────
-MotorController motors(IN1, IN2, ENA, IN3, IN4, ENB);
+// Ordem do construtor MotorController: (in1, in2, ena, in3, in4, enb)
+MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
-Robot robot(motors, sensor);
+
+// IR sensor desativado — passar -1 como irPin
+Robot robot(motors, sensor, -1);
 
 // ─── Setup ──────────────────────────────────────────────
 void setup() {
+  #ifdef ESP8266
+    Debug.begin();
+  #else
+    Serial.begin(115200);
+  #endif
   robot.setup();
 }
 
 // ─── Loop Principal ─────────────────────────────────────
 void loop() {
+  #ifdef ESP8266
+    Debug.handleClient();
+  #endif
   robot.update();
 }

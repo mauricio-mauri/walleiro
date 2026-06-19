@@ -8,20 +8,6 @@ Define os pinos físicos para cada placa. Inclua com:
 #include <pins.h>
 ```
 
-### Constantes (ESP32 — Wokwi)
-
-| Constante | GPIO | Função |
-|-----------|------|--------|
-| `TRIG_PIN` | 18 | Trigger do HC-SR04 |
-| `ECHO_PIN` | 19 | Echo do HC-SR04 |
-| `MAX_DISTANCE` | — | Alcance máximo do sensor (200 cm) |
-| `AIN1` | 25 | Motor A — direção (TB6612) |
-| `AIN2` | 26 | Motor A — direção (TB6612) |
-| `PWMA` | 32 | Motor A — PWM (TB6612) |
-| `BIN1` | 27 | Motor B — direção (TB6612) |
-| `BIN2` | 14 | Motor B — direção (TB6612) |
-| `PWMB` | 33 | Motor B — PWM (TB6612) |
-
 ### Constantes (ESP8266 — NodeMCU v3)
 
 | Constante | GPIO | Silkscreen |
@@ -315,7 +301,7 @@ Substitui o `Serial.print()` convencional por uma saída que vai
 simultaneamente para **Serial USB** e para uma **página web**
 servida via WiFi (Access Point).
 
-Só compilada para ESP8266. No ESP32 (Wokwi) usa `Serial` direto.
+Exclusiva para ESP8266 — depende de `ESP8266WiFi.h` e `ESP8266WebServer.h`.
 
 ### includes
 

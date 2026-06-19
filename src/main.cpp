@@ -1,12 +1,6 @@
 #include <Arduino.h>
-
-// Incluir WiFi antes dos módulos do robô (necessário para compilação)
-#ifdef ESP32
-  #include <WiFi.h>
-#else
-  #include <ESP8266WiFi.h>
-  #include <DebugLog.h>
-#endif
+#include <ESP8266WiFi.h>
+#include <DebugLog.h>
 
 #include <pins.h>
 #include <MotorController.h>
@@ -23,18 +17,12 @@ Robot robot(motors, sensor, -1);
 
 // ─── Setup ──────────────────────────────────────────────
 void setup() {
-  #ifdef ESP8266
-    Debug.begin();
-  #else
-    Serial.begin(115200);
-  #endif
+  Debug.begin();
   robot.setup();
 }
 
 // ─── Loop Principal ─────────────────────────────────────
 void loop() {
-  #ifdef ESP8266
-    Debug.handleClient();
-  #endif
+  Debug.handleClient();
   robot.update();
 }

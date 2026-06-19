@@ -43,16 +43,6 @@ o driver **TB6612FNG** para controle dos motores DC.
 - **Motores DC** — tração diferencial
 - **Power Bank 5V** — alimentação portátil
 
-**Duas formas de trabalhar:**
-
-| Ambiente | Placa | Finalidade |
-|----------|-------|------------|
-| Simulação (Wokwi) | ESP32 | Testar lógica sem hardware |
-| Físico | ESP8266 NodeMCU v3 | Rodar no robô real |
-
-O código é **único** (`src/main.cpp`) e usa `#ifdef ESP32` para compilar
-o trecho certo para cada placa.
-
 ---
 
 ## 📡 Debug sem fio (WiFi AP)
@@ -103,22 +93,6 @@ O robô cria a própria rede WiFi no boot:
 | 3V3 | 3,3V | HC-SR04 VCC, HW-201 VCC |
 | GND | 0V | Comum a todos os módulos |
 
-### ESP32 (simulação Wokwi)
-
-| GPIO | Sinal | Componente |
-|------|-------|------------|
-| 18 | TRIG | HC-SR04 |
-| 19 | ECHO | HC-SR04 |
-| 25 | AIN1 | TB6612FNG (LED no diagrama) |
-| 26 | AIN2 | TB6612FNG |
-| 32 | PWMA | TB6612FNG (LED indicador) |
-| 27 | BIN1 | TB6612FNG |
-| 14 | BIN2 | TB6612FNG |
-| 33 | PWMB | TB6612FNG (LED indicador) |
-
-> Na simulação, os motores DC são representados por LEDs nos pinos
-> PWM (32 e 33). O Wokwi não tem modelos de motor DC.
-
 ---
 
 ## ⚙️ Configuração do Ambiente
@@ -149,11 +123,7 @@ necessárias na primeira compilação.
 ### 5. Compilar
 
 ```bash
-# Simulação (ESP32)
 pio run
-
-# Placa física (ESP8266)
-pio run -e nodemcuv2
 ```
 
 > Se `pio run` não funcionar, use o caminho completo:
@@ -165,13 +135,11 @@ pio run -e nodemcuv2
 
 | Ação | Comando |
 |------|---------|
-| Compilar (simulação) | `pio run` |
-| Compilar (placa física) | `pio run -e nodemcuv2` |
-| Upload ESP8266 | `pio run -e nodemcuv2 --target upload` |
-| Upload com porta específica | `pio run -e nodemcuv2 --target upload --upload-port /dev/ttyUSB0` |
+| Compilar | `pio run` |
+| Upload | `pio run --target upload` |
+| Upload com porta específica | `pio run --target upload --upload-port /dev/ttyUSB0` |
 | Monitor serial | `pio device monitor -b 115200` |
 | Limpar build | `pio run --target clean` |
-| Simular Wokwi | `wokwi` |
 
 ---
 
@@ -228,35 +196,6 @@ git commit -m ":bug: fix: correção na leitura do sensor"
 
 ---
 
-## 🧪 Simulação Wokwi
-
-Wokwi é um simulador de circuitos que roda dentro do VS Code.
-Ele permite testar o código **sem precisar do hardware físico**.
-
-**Limitação:** o Wokwi só simula ESP32, não ESP8266.
-Por isso o projeto tem dois ambientes de compilação.
-
-**Como usar:**
-
-```bash
-# 1. Compile o firmware para ESP32
-pio run
-
-# 2. Inicie a simulação (VS Code → aba Wokwi → Start)
-```
-
-O arquivo `diagram.json` define os componentes e conexões do circuito
-simulado.
-
-**Fluxo recomendado:**
-
-```
-Edita código → Compila (pio run) → Simula (Wokwi) → Testa
-→ Se funcionar: compila pra ESP8266 → upload na placa real
-```
-
----
-
 ## 🛠️ Solução de Problemas
 
 ### Erro de permissão na porta USB
@@ -274,11 +213,6 @@ O ESP8266 pode estar em modo de boot incorreto. Tente:
 2. Aperte **RST** (reset) rapidamente
 3. Solte o **FLASH**
 4. Execute o upload novamente
-
-### Wokwi não abre
-
-- Verifique se a extensão "Wokwi for VS Code" está instalada
-- Verifique se `pio/build/esp32_sim/firmware.bin` existe (rode `pio run`)
 
 ### Monitor serial não mostra nada
 
@@ -306,9 +240,7 @@ walleiro/
 │   ├── API.md                # Referência das classes
 │   └── HARDWARE.md           # Montagem e ligações
 ├── test/                     # (vazio — sem testes ainda)
-├── diagram.json              # Circuito Wokwi
-├── wokwi.toml                # Configuração Wokwi
-├── platformio.ini            # Build (2 envs)
+├── platformio.ini            # Build (env: nodemcuv2)
 └── README.md                 # Este arquivo
 ```
 
@@ -345,7 +277,5 @@ walleiro/
 - [TB6612FNG Datasheet](https://www.sparkfun.com/datasheets/Robotics/TB6612FNG.pdf)
 - [HC-SR04 Datasheet](https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf)
 - [ESP8266 NodeMCU v3 Pinout](https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/)
-- [ESP32 DevKit v4 Pinout](https://raw.githubusercontent.com/espressif/ESP8266_MP3_Decoder/master/pinout/ESP32-pinout.png)
-- [Wokwi — Simulação de IoT](https://wokwi.com)
 - [PlatformIO Docs](https://docs.platformio.org)
 - [iuricode/padroes-de-commits](https://github.com/iuricode/padroes-de-commits)

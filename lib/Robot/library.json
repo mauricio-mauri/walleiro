@@ -8,7 +8,7 @@
   },
   "license": "MIT",
   "frameworks": "arduino",
-  "platforms": ["espressif32", "espressif8266"],
+  "platforms": ["espressif8266"],
   "dependencies": {
     "MotorController": "*",
     "UltrasonicSensor": "*"

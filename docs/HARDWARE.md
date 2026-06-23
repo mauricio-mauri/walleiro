@@ -107,7 +107,6 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 - **Alimentação:** 5V do cabo cortado (mesmo ramo do TB6612 VM)
 - **Sinal:** D0 (GPIO 16) — 3.3V do ESP8266, compatível com o servo
 - **Nunca** ligue o VCC do servo no 3V3 ou VU do NodeMCU
-- **Nunca** ligue o sinal do servo no A0 (A0 é **entrada** ADC, não saída)
 
 ### HC-SR04
 
@@ -180,7 +179,7 @@ Nenhum movimento involuntário.
 | GND power bank = GND NodeMCU = GND TB6612 (comum) | ⚠️ |
 | VM no cabo cortado, **não** no VU | ⚠️ |
 
-Marque com ✅ antes de ligar a energia.
+Verifique antes de ligar a energia.
 
 ---
 

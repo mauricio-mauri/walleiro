@@ -97,15 +97,17 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 
 ### Servo SG90
 
-| Pino | Conecta em | Fio |
-|------|------------|------|
-| VCC (vermelho) | Power Bank 5V (cabo cortado) | Vermelho |
-| GND (marrom) | GND | Preto |
-| Sinal (laranja) | NodeMCU D0 | Laranja |
+| Fio | Pino do servo | Conecta em | Por quê |
+|-----|:-------------:|------------|---------|
+| Vermelho | **VCC** (alimentação) | **Power Bank 5V** (cabo cortado) | Motor precisa de 5V — NodeMCU não aguenta a corrente (~700mA em stall) |
+| Marrom | **GND** | **GND** comum | Terra |
+| Laranja | **Sinal** (PWM) | **NodeMCU D0** (GPIO 16) | Sinal PWM em 3.3V — SG90 aceita este nível mesmo com VCC em 5V |
 
-> O servo é alimentado pelos **5V do cabo cortado**, não pelo NodeMCU.
-> O SG90 em stall pode puxar ~700mA — o regulador do NodeMCU não aguenta.
-> Sinal em 3.3V é suficiente para o SG90.
+**Resumo:**
+- **Alimentação:** 5V do cabo cortado (mesmo ramo do TB6612 VM)
+- **Sinal:** D0 (GPIO 16) — 3.3V do ESP8266, compatível com o servo
+- **Nunca** ligue o VCC do servo no 3V3 ou VU do NodeMCU
+- **Nunca** ligue o sinal do servo no A0 (A0 é **entrada** ADC, não saída)
 
 ### HC-SR04
 

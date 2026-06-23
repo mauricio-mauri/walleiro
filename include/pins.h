@@ -28,3 +28,6 @@
 // Sensor infravermelho HW-201 via resistor ladder no ADC
 #define LINE_SENSOR   A0   // ADC
 
+// Servo motor SG90 (rotaciona HC-SR04)
+#define SERVO_PIN     16   // D0
+

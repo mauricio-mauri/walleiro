@@ -82,6 +82,7 @@ O robô cria a própria rede WiFi no boot:
 | 0 | D3 | BIN1 | TB6612FNG |
 | 2 | D4 | BIN2 | TB6612FNG |
 | 15 | D8 | PWMB | TB6612FNG |
+| 16 | D0 | SERVO | Servo SG90 (HC-SR04 rotativo) |
 | A0 | ADC | LINE_SENSOR | HW-201 (resistor ladder) |
 
 **Alimentação:**

@@ -10,6 +10,7 @@
 | TB6612FNG (HW-166) | 1 | Driver de motor (ponte H MOSFET) |
 | Motor DC 3-6V 200 RPM | 2 | Tração diferencial |
 | HC-SR04 | 1 | Sensor ultrassônico |
+| Servo SG90 | 1 | Rotaciona o HC-SR04 para varredura L/R |
 | HW-201 | 2 | Sensor infravermelho (resistor ladder no ADC) |
 | Power Bank GoPro 5V | 1 | Alimentação |
 
@@ -17,7 +18,6 @@
 
 - Potenciômetro
 - Display 7 segmentos
-- Servo motor
 - Capacitor
 - Motor DC 3-6V 200 RPM (reserva)
 
@@ -40,7 +40,7 @@ Power Bank 5V
 | NodeMCU VIN | 5V (power bank) | NodeMCU (regulador 3.3V interno) |
 | NodeMCU 3V3 | 3.3V | HC-SR04 VCC, HW-201 VCC |
 | NodeMCU VU | ~4.7V | TB6612 VCC (lógica) |
-| Power Bank (cabo cortado) | 5V | TB6612 VM (motores) |
+| Power Bank (cabo cortado) | 5V | TB6612 VM (motores), **Servo SG90 VCC** |
 
 ### Por que 3.3V nos sensores?
 
@@ -65,7 +65,8 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 | GND | — | GND | Power Bank / breadboard | Preto |
 | 3V3 | — | VCC, VCC | HC-SR04, HW-201 | Marrom |
 | VU | — | VCC, STBY | TB6612FNG | Branco |
-| A0 | — | ADC (resistor ladder) | HW-201 (IR_L + IR_R) | Marrom |
+| A0 | — | ADC (resistor ladder) | HW-201 (IR_L + IR_R) | Ciano |
+| D0 | 16 | Sinal | Servo SG90 | Laranja |
 | D1 | 5 | TRIG | HC-SR04 | Laranja |
 | D2 | 4 | ECHO | HC-SR04 | Cinza |
 | D3 | 0 | BIN1 | TB6612FNG | Amarelo |
@@ -93,6 +94,18 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 | BIN1        | D3                | ESP8266                 | Amarelo  |
 | BIN2        | D4                | ESP8266                 | Amarelo  |
 | PWMB        | D8                | ESP8266                 | Roxo     |
+
+### Servo SG90
+
+| Pino | Conecta em | Fio |
+|------|------------|------|
+| VCC (vermelho) | Power Bank 5V (cabo cortado) | Vermelho |
+| GND (marrom) | GND | Preto |
+| Sinal (laranja) | NodeMCU D0 | Laranja |
+
+> O servo é alimentado pelos **5V do cabo cortado**, não pelo NodeMCU.
+> O SG90 em stall pode puxar ~700mA — o regulador do NodeMCU não aguenta.
+> Sinal em 3.3V é suficiente para o SG90.
 
 ### HC-SR04
 
@@ -158,6 +171,7 @@ Nenhum movimento involuntário.
 | Verificação | OK? |
 |-------------|:---:|
 | HC-SR04 VCC no **3V3**, não no 5V | ⚠️ |
+| Servo SG90 VCC no **5V (cabo cortado)**, não no 3V3 ou VU | ⚠️ |
 | HW-201 VCC no **3V3**, não no 5V | ⚠️ |
 | Resistor ladder montado: IR_L=10kΩ, IR_R=20kΩ, GND=10kΩ | ⚠️ |
 | STBY jumper no **VCC** (TB6612 funcionar) | ⚠️ |

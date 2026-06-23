@@ -13,7 +13,7 @@
 MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 LineFollower lineSensor(LINE_SENSOR);
-Robot robot(motors, sensor, lineSensor);
+Robot robot(motors, sensor, lineSensor, SERVO_PIN);
 
 // ─── Setup ──────────────────────────────────────────────
 void setup() {

@@ -2,13 +2,21 @@
 #include <DebugLog.h>
 
 Robot::Robot(MotorController& motors, UltrasonicSensor& sensor,
-             LineFollower& lineSensor)
-  : _motors(motors), _sensor(sensor), _line(lineSensor) {}
+             LineFollower& lineSensor, int servoPin)
+  : _motors(motors), _sensor(sensor), _line(lineSensor),
+    _servoPin(servoPin) {}
 
 void Robot::setup() {
   _motors.begin();
   _motors.setSpeed(VEL_BASE);
   _motors.stop();
+
+  if (_servoPin >= 0) {
+    _servo.attach(_servoPin);
+    _servo.write(ANGLE_CENTER);
+    delay(500);
+  }
+
   Debug.println("Robô iniciado.");
 }
 
@@ -17,12 +25,46 @@ void Robot::update() {
 
   // ─── Prioridade 1: obstáculo ───────────────────────────
   if (distancia > 0 && distancia < DIST_MINIMA) {
-    Debug.println("Obstáculo! Desviando...");
+    Debug.println("Obstáculo! Escaneando...");
     _motors.stop();
-    delay(300);
-    _motors.setSpeed(VEL_BASE);
-    _motors.turnLeft();
-    delay(400);
+
+    if (_servoPin >= 0) {
+      // Mede lado esquerdo
+      _servo.write(ANGLE_LEFT);
+      delay(300);
+      unsigned int distEsq = _sensor.readDistance();
+
+      // Mede lado direito
+      _servo.write(ANGLE_RIGHT);
+      delay(300);
+      unsigned int distDir = _sensor.readDistance();
+
+      // Escolhe o lado com mais espaço
+      Debug.print("Esq: ");
+      Debug.print(distEsq);
+      Debug.print("  Dir: ");
+      Debug.println(distDir);
+
+      if (distDir > distEsq) {
+        _motors.setSpeed(VEL_BASE);
+        _motors.turnRight();
+      } else {
+        _motors.setSpeed(VEL_BASE);
+        _motors.turnLeft();
+      }
+      delay(TEMPO_CURVA);
+
+      // Volta ao centro
+      _servo.write(ANGLE_CENTER);
+      delay(300);
+    } else {
+      // Sem servo: desvia no tempo fixo
+      delay(TEMPO_PAUSA);
+      _motors.setSpeed(VEL_BASE);
+      _motors.turnLeft();
+      delay(TEMPO_CURVA);
+    }
+
     return;
   }
 

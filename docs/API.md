@@ -306,11 +306,12 @@ com desvio de obstáculos.
 
 ```cpp
 Robot(MotorController& motors, UltrasonicSensor& sensor,
-      LineFollower& lineSensor);
+      LineFollower& lineSensor, int servoPin = -1);
 ```
 
 Recebe **referências** para o controlador de motores, sensor
-ultrassônico e seguidor de linha.
+ultrassônico e seguidor de linha. O parâmetro `servoPin` indica
+o pino do servo SG90 (passar -1 para desativar).
 
 **Exemplo:**
 
@@ -318,7 +319,7 @@ ultrassônico e seguidor de linha.
 MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 LineFollower lineSensor(LINE_SENSOR);
-Robot robot(motors, sensor, lineSensor);
+Robot robot(motors, sensor, lineSensor, SERVO_PIN);   // com servo
 ```
 
 ### `setup()`
@@ -332,7 +333,8 @@ Inicializa o robô:
 1. `_motors.begin()`
 2. `_motors.setSpeed(VEL_BASE)` — padrão 180
 3. `_motors.stop()`
-4. Imprime `Robô iniciado.` no log
+4. Se servo ativado: `_servo.attach(servoPin)`, escreve 90° (centro)
+5. Imprime `Robô iniciado.` no log
 
 ### `update()`
 
@@ -343,9 +345,13 @@ void update();
 Executa um ciclo completo do comportamento. Deve ser chamado dentro
 de `loop()`. A cada chamada:
 
-1. Lê a distância do sensor ultrassônico
-2. **Se obstáculo a < 15 cm**: `stop()`, pausa 300 ms, `turnLeft()`,
-   espera 400 ms, retorna
+1. Lê a distância do sensor ultrassônico (servo em 90° — centro)
+2. **Se obstáculo a < 15 cm**:
+   - **Com servo**: `stop()`, servo vai para 0° (esquerda), mede;
+     servo vai para 180° (direita), mede; escolhe o lado com MAIS
+     espaço; vira para o lado escolhido; servo volta para 90°
+   - **Sem servo**: `stop()`, pausa 300 ms, `turnLeft()`, espera 400 ms
+   - Retorna
 3. **Senão**: lê o `LineFollower` e corrige trajetória com
    **diferencial de velocidade** (curva suave):
    - **FORA (0)**: `forward()` com `VEL_BASE` (tenta reencontrar)
@@ -363,6 +369,11 @@ de `loop()`. A cada chamada:
 | `VEL_BASE` | 180 | Velocidade base dos motores (0–255) |
 | `VEL_CURVA` | 60 | Diferencial aplicado nas correções |
 | `DIST_MINIMA` | 15 cm | Distância que dispara o desvio |
+| `TEMPO_PAUSA` | 300 ms | Pausa antes de desviar |
+| `TEMPO_CURVA` | 400 ms | Duração da curva de desvio |
+| `ANGLE_CENTER` | 90° | Posição central do servo |
+| `ANGLE_LEFT` | 0° | Posição esquerda do servo |
+| `ANGLE_RIGHT` | 180° | Posição direita do servo |
 
 Para alterar, edite `lib/Robot/src/Robot.h`.
 
@@ -457,7 +468,7 @@ A página exibe as últimas 50 linhas do log, atualizando a cada
 MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 LineFollower lineSensor(LINE_SENSOR);
-Robot robot(motors, sensor, lineSensor);
+Robot robot(motors, sensor, lineSensor, SERVO_PIN);
 
 void setup() {
   Debug.begin();

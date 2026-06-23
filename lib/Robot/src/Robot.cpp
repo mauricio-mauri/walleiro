@@ -1,55 +1,59 @@
 #include "Robot.h"
+#include <DebugLog.h>
 
-#ifdef ESP8266
-  #include <DebugLog.h>
-  #define LOG Debug
-#else
-  #define LOG Serial
-#endif
-
-Robot::Robot(MotorController& motors, UltrasonicSensor& sensor, int irPin)
-  : _motors(motors), _sensor(sensor), _irPin(irPin) {}
+Robot::Robot(MotorController& motors, UltrasonicSensor& sensor,
+             LineFollower& lineSensor)
+  : _motors(motors), _sensor(sensor), _line(lineSensor) {}
 
 void Robot::setup() {
   _motors.begin();
-  _motors.setSpeed(VELOCIDADE);
+  _motors.setSpeed(VEL_BASE);
   _motors.stop();
-  if (_irPin >= 0) {
-    pinMode(_irPin, INPUT);
-  }
-  LOG.println("Robô iniciado.");
+  Debug.println("Robô iniciado.");
 }
 
 void Robot::update() {
-  // ─── Sensor IR (obstáculo imediato) ───────────────
-  if (_irPin >= 0 && digitalRead(_irPin) == LOW) {
-    LOG.println("IR: obstáculo detectado!");
+  unsigned int distancia = _sensor.readDistance();
+
+  // ─── Prioridade 1: obstáculo ───────────────────────────
+  if (distancia > 0 && distancia < DIST_MINIMA) {
+    Debug.println("Obstáculo! Desviando...");
     _motors.stop();
-    delay(TEMPO_PAUSA);
+    delay(300);
+    _motors.setSpeed(VEL_BASE);
     _motors.turnLeft();
-    delay(TEMPO_CURVA);
+    delay(400);
     return;
   }
 
-  // ─── Sensor ultrassônico ─────────────────────────
-  unsigned int distancia = _sensor.readDistance();
+  // ─── Prioridade 2: seguir linha ─────────────────────────
+  int estado = _line.read();
 
-  LOG.print("Distancia: ");
-  LOG.print(distancia);
-  LOG.println(" cm");
+  Debug.print("Linha: ");
+  Debug.println(estado);
 
-  if (distancia == 0 || distancia > DIST_REFERENCIA + 10) {
-    // Sem leitura ou muito longe: avança
-    _motors.forward();
-  } else if (distancia < DIST_MINIMA) {
-    // Obstáculo próximo: para e vira
-    _motors.stop();
-    delay(TEMPO_PAUSA);
-    _motors.turnLeft();
-    delay(TEMPO_CURVA);
-  } else {
-    // Na faixa ideal: segue em frente
-    _motors.forward();
+  switch (estado) {
+    case 0:  // FORA DA LINHA — segue reto tentando reencontrar
+      _motors.setSpeed(VEL_BASE);
+      _motors.forward();
+      break;
+
+    case 1:  // ESQUERDA — corrige para a esquerda (motor direito mais fraco)
+      _motors.setSpeedA(VEL_BASE + VEL_CURVA);
+      _motors.setSpeedB(VEL_BASE - VEL_CURVA);
+      _motors.forward();
+      break;
+
+    case 2:  // DIREITA — corrige para a direita (motor esquerdo mais fraco)
+      _motors.setSpeedA(VEL_BASE - VEL_CURVA);
+      _motors.setSpeedB(VEL_BASE + VEL_CURVA);
+      _motors.forward();
+      break;
+
+    case 3:  // MEIO DA LINHA — segue reto
+      _motors.setSpeed(VEL_BASE);
+      _motors.forward();
+      break;
   }
 
   delay(50);

@@ -10,7 +10,7 @@
 | TB6612FNG (HW-166) | 1 | Driver de motor (ponte H MOSFET) |
 | Motor DC 3-6V 200 RPM | 2 | Tração diferencial |
 | HC-SR04 | 1 | Sensor ultrassônico |
-| HW-201 | 1 | Sensor infravermelho (desconectado) |
+| HW-201 | 2 | Sensor infravermelho (resistor ladder no ADC) |
 | Power Bank GoPro 5V | 1 | Alimentação |
 
 ### Desconectados (disponíveis)
@@ -65,7 +65,7 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 | GND | — | GND | Power Bank / breadboard | Preto |
 | 3V3 | — | VCC, VCC | HC-SR04, HW-201 | Marrom |
 | VU | — | VCC, STBY | TB6612FNG | Branco |
-| D0 | 16 | OUT | HW-201 (não ligado) | Cinza |
+| A0 | — | ADC (resistor ladder) | HW-201 (IR_L + IR_R) | Marrom |
 | D1 | 5 | TRIG | HC-SR04 | Laranja |
 | D2 | 4 | ECHO | HC-SR04 | Cinza |
 | D3 | 0 | BIN1 | TB6612FNG | Amarelo |
@@ -77,22 +77,22 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 
 ### TB6612FNG (HW-166)
 
-| Pino TB6612 | Conecta em | Componente | Fio |
-|-------------|------------|------------|-----|
-| VM | 5V (cabo cortado) | Power Bank | Vermelho |
-| VCC | VU (NodeMCU) | ESP8266 | Branco |
-| GND | GND | Power Bank / breadboard | Preto |
-| STBY | VU (NodeMCU) | ESP8266 | Branco |
-| A01 | Motor A fio 1 | Motor DC 1 | Azul |
-| A02 | Motor A fio 2 | Motor DC 1 | Azul |
-| B01 | Motor B fio 1 | Motor DC 2 | Verde |
-| B02 | Motor B fio 2 | Motor DC 2 | Verde |
-| AIN1 | D5 | ESP8266 | Amarelo |
-| AIN2 | D6 | ESP8266 | Amarelo |
-| PWMA | D7 | ESP8266 | Roxo |
-| BIN1 | D3 | ESP8266 | Amarelo |
-| BIN2 | D4 | ESP8266 | Amarelo |
-| PWMB | D8 | ESP8266 | Roxo |
+| Pino TB6612 | Conecta em        | Componente              | Fio      |
+| ----------- | ----------------- | ----------------------- | -------- |
+| VM          | 5V (cabo cortado) | Power Bank              | Vermelho |
+| VCC         | VU (NodeMCU)      | ESP8266                 | Branco   |
+| GND         | GND               | Power Bank / breadboard | Preto    |
+| STBY        | VU (NodeMCU)      | ESP8266                 | Branco   |
+| A01         | Motor A fio 1     | Motor DC 1              | Azul     |
+| A02         | Motor A fio 2     | Motor DC 1              | Verde    |
+| B01         | Motor B fio 1     | Motor DC 2              | Azul     |
+| B02         | Motor B fio 2     | Motor DC 2              | Verde    |
+| AIN1        | D5                | ESP8266                 | Amarelo  |
+| AIN2        | D6                | ESP8266                 | Amarelo  |
+| PWMA        | D7                | ESP8266                 | Roxo     |
+| BIN1        | D3                | ESP8266                 | Amarelo  |
+| BIN2        | D4                | ESP8266                 | Amarelo  |
+| PWMB        | D8                | ESP8266                 | Roxo     |
 
 ### HC-SR04
 
@@ -103,13 +103,38 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 | TRIG | NodeMCU D1 | Laranja |
 | ECHO | NodeMCU D2 | Cinza |
 
-### HW-201 (não ligado)
+### HW-201 (resistor ladder)
 
-| Pino | Conecta em |
-|------|------------|
-| VCC | NodeMCU 3V3 |
-| GND | GND |
-| OUT | NodeMCU D0 |
+Os dois sensores são conectados a um **resistor ladder** no ADC:
+
+```
+      3.3V
+        │
+        ├── IR_L VCC      ├── IR_R VCC
+        │                  │
+        ├── IR_L OUT ── 10kΩ ──┐
+        │                      │
+        ├── IR_R OUT ── 20kΩ ──┤
+        │                      │
+        └── GND      ── 10kΩ ──┤
+                               │
+                          NodeMCU A0
+```
+
+| Componente | Valores |
+|------------|---------|
+| R1 (IR_L → A0) | 10kΩ (marrom-preto-laranja) |
+| R2 (IR_R → A0) | 20kΩ (vermelho-preto-laranja, ou 2×10k em série) |
+| R3 (GND → A0) | 10kΩ (marrom-preto-laranja) |
+
+| Sensor | Pino | Conecta em |
+|--------|------|------------|
+| HW-201 #1 (IR_L) | VCC | NodeMCU 3V3 |
+| | GND | GND |
+| | OUT | 10kΩ → A0 |
+| HW-201 #2 (IR_R) | VCC | NodeMCU 3V3 |
+| | GND | GND |
+| | OUT | 20kΩ → A0 |
 
 ---
 
@@ -134,6 +159,7 @@ Nenhum movimento involuntário.
 |-------------|:---:|
 | HC-SR04 VCC no **3V3**, não no 5V | ⚠️ |
 | HW-201 VCC no **3V3**, não no 5V | ⚠️ |
+| Resistor ladder montado: IR_L=10kΩ, IR_R=20kΩ, GND=10kΩ | ⚠️ |
 | STBY jumper no **VCC** (TB6612 funcionar) | ⚠️ |
 | GND power bank = GND NodeMCU = GND TB6612 (comum) | ⚠️ |
 | VM no cabo cortado, **não** no VU | ⚠️ |

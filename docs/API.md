@@ -21,11 +21,7 @@ Define os pinos físicos para cada placa. Inclua com:
 | `BIN1` | 0 | D3 |
 | `BIN2` | 2 | D4 |
 | `PWMB` | 15 | D8 (PWM) |
-| `IR_PIN` | 16 | D0 (comentado — ativar quando ligar) |
-
-> `IR_PIN` está comentado por padrão. Descomente em `pins.h` e
-> passe `IR_PIN` em vez de `-1` no construtor do `Robot` quando
-> o sensor HW-201 estiver conectado.
+| `LINE_SENSOR` | A0 | ADC — HW-201 via resistor ladder |
 
 ---
 
@@ -81,8 +77,8 @@ Deve ser chamado dentro de `setup()`.
 void forward();
 ```
 
-Ambos os motores giram para frente na velocidade atual (`AIN1=HIGH,
-AIN2=LOW, BIN1=HIGH, BIN2=LOW`).
+Ambos os motores giram para frente (`AIN1=HIGH, AIN2=LOW, BIN1=HIGH,
+BIN2=LOW`). Cada motor usa sua velocidade individual (`_speedA` e `_speedB`).
 
 ### `backward()`
 
@@ -137,13 +133,31 @@ motors.setSpeed(200);  // mais rápido
 motors.forward();      // aplica a nova velocidade
 ```
 
-### `getSpeed()`
+### `setSpeedA()` / `setSpeedB()`
 
 ```cpp
-uint8_t getSpeed() const;
+void setSpeedA(uint8_t speed);
+void setSpeedB(uint8_t speed);
 ```
 
-Retorna a velocidade atual (0–255).
+Ajusta a velocidade de cada motor **individualmente**. Útil para
+correções suaves de trajetória (diferencial de velocidade).
+
+**Exemplo:**
+```cpp
+motors.setSpeedA(200);   // motor esquerdo mais rápido
+motors.setSpeedB(150);   // motor direito mais lento
+motors.forward();         // curva para a direita
+```
+
+### `getSpeedA()` / `getSpeedB()`
+
+```cpp
+uint8_t getSpeedA() const;
+uint8_t getSpeedB() const;
+```
+
+Retorna a velocidade individual de cada motor (0–255).
 
 ---
 
@@ -214,9 +228,71 @@ if (sensor.obstacleDetected(20)) {
 
 ---
 
+## `LineFollower`
+
+Leitura de 2 sensores IR (HW-201) conectados a um **resistor ladder**
+no pino ADC do ESP8266. Converte a tensão analógica em 4 estados
+discretos.
+
+```
+IR_L ── 10kΩ ──┐
+                ├── A0
+IR_R ── 20kΩ ──┘
+GND  ── 10kΩ
+```
+
+### includes
+
+```cpp
+#include <LineFollower.h>
+```
+
+### Construtor
+
+```cpp
+LineFollower(uint8_t adcPin = A0);
+```
+
+| Parâmetro | Padrão | Descrição |
+|-----------|--------|-----------|
+| `adcPin` | A0 | Pino ADC conectado ao resistor ladder |
+
+### `begin()`
+
+```cpp
+void begin();
+```
+
+Inicializa o sensor (consistência com os demais módulos).
+
+### `read()`
+
+```cpp
+int read();
+```
+
+Lê o ADC e retorna o estado da linha:
+
+| Retorno | Estado | Tensão A0 | analogRead |
+|:-------:|--------|:---------:|:----------:|
+| 0 | FORA DA LINHA | 0 V | ~0 |
+| 1 | ESQUERDA | 1,1 V | ~341 |
+| 2 | DIREITA | 1,65 V | ~512 |
+| 3 | MEIO DA LINHA | 1,98 V | ~614 |
+
+**Exemplo:**
+```cpp
+int estado = lineSensor.read();
+if (estado == 0) {
+  Debug.println("Perdeu a linha!");
+}
+```
+
+---
+
 ## `Robot`
 
-Coordena os módulos de motor, sensor ultrassônico e sensor IR
+Coordena os módulos de motor, sensor ultrassônico e seguidor de linha
 para executar o comportamento do robô seguidor de trajetória
 com desvio de obstáculos.
 
@@ -229,20 +305,20 @@ com desvio de obstáculos.
 ### Construtor
 
 ```cpp
-Robot(MotorController& motors, UltrasonicSensor& sensor, int irPin = -1);
+Robot(MotorController& motors, UltrasonicSensor& sensor,
+      LineFollower& lineSensor);
 ```
 
-Recebe **referências** para o controlador de motores e o sensor.
-O parâmetro `irPin` indica o pino do sensor HW-201; passe `-1`
-para desativar (padrão).
+Recebe **referências** para o controlador de motores, sensor
+ultrassônico e seguidor de linha.
 
 **Exemplo:**
 
 ```cpp
 MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
-Robot robot(motors, sensor, -1);          // sem IR
-// Robot robot(motors, sensor, IR_PIN);   // com IR
+LineFollower lineSensor(LINE_SENSOR);
+Robot robot(motors, sensor, lineSensor);
 ```
 
 ### `setup()`
@@ -254,13 +330,9 @@ void setup();
 Inicializa o robô:
 
 1. `_motors.begin()`
-2. `_motors.setSpeed(VELOCIDADE)` — padrão 180
+2. `_motors.setSpeed(VEL_BASE)` — padrão 180
 3. `_motors.stop()`
-4. Se `_irPin >= 0`: `pinMode(_irPin, INPUT)`
-5. Imprime `Robô iniciado.` no log
-
-> O `Serial.begin()` é chamado pelo `DebugLog::begin()` em `main.cpp`,
-> não pelo `Robot::setup()`.
+4. Imprime `Robô iniciado.` no log
 
 ### `update()`
 
@@ -271,25 +343,26 @@ void update();
 Executa um ciclo completo do comportamento. Deve ser chamado dentro
 de `loop()`. A cada chamada:
 
-1. Se IR ativado e obstáculo detectado → `stop()`, pausa 300 ms,
-   `turnLeft()`, espera 400 ms, retorna
-2. Lê a distância do sensor ultrassônico
-3. Imprime no log
-4. Decide a ação:
-   - **distância == 0 ou > 35 cm** → `forward()`
-   - **distância < 15 cm** → `stop()`, pausa 300 ms, `turnLeft()`, espera 400 ms
-   - **15–35 cm** → `forward()`
-5. Aguarda 50 ms
+1. Lê a distância do sensor ultrassônico
+2. **Se obstáculo a < 15 cm**: `stop()`, pausa 300 ms, `turnLeft()`,
+   espera 400 ms, retorna
+3. **Senão**: lê o `LineFollower` e corrige trajetória com
+   **diferencial de velocidade** (curva suave):
+   - **FORA (0)**: `forward()` com `VEL_BASE` (tenta reencontrar)
+   - **ESQUERDA (1)**: motor A mais rápido, motor B mais lento →
+     corrige para a esquerda
+   - **DIREITA (2)**: motor A mais lento, motor B mais rápido →
+     corrige para a direita
+   - **MEIO (3)**: `forward()` com `VEL_BASE` (centrado)
+4. Aguarda 50 ms
 
 ### Constantes internas (ajustáveis)
 
 | Constante | Valor | Efeito |
 |-----------|-------|--------|
-| `VELOCIDADE` | 180 | Velocidade padrão dos motores (0–255) |
+| `VEL_BASE` | 180 | Velocidade base dos motores (0–255) |
+| `VEL_CURVA` | 60 | Diferencial aplicado nas correções |
 | `DIST_MINIMA` | 15 cm | Distância que dispara o desvio |
-| `DIST_REFERENCIA` | 25 cm | Distância alvo para seguir em frente |
-| `TEMPO_CURVA` | 400 ms | Duração da curva de desvio |
-| `TEMPO_PAUSA` | 300 ms | Pausa antes de virar |
 
 Para alterar, edite `lib/Robot/src/Robot.h`.
 
@@ -378,14 +451,17 @@ A página exibe as últimas 50 linhas do log, atualizando a cada
 #include <pins.h>
 #include <MotorController.h>
 #include <UltrasonicSensor.h>
+#include <LineFollower.h>
 #include <Robot.h>
 
 MotorController motors(AIN1, AIN2, PWMA, BIN1, BIN2, PWMB);
 UltrasonicSensor sensor(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
-Robot robot(motors, sensor, -1);
+LineFollower lineSensor(LINE_SENSOR);
+Robot robot(motors, sensor, lineSensor);
 
 void setup() {
   Debug.begin();
+  lineSensor.begin();
   robot.setup();
 }
 

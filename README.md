@@ -82,7 +82,7 @@ O robô cria a própria rede WiFi no boot:
 | 0 | D3 | BIN1 | TB6612FNG |
 | 2 | D4 | BIN2 | TB6612FNG |
 | 15 | D8 | PWMB | TB6612FNG |
-| 16 | D0 | IR_PIN | HW-201 (futuro) |
+| A0 | ADC | LINE_SENSOR | HW-201 (resistor ladder) |
 
 **Alimentação:**
 
@@ -90,7 +90,7 @@ O robô cria a própria rede WiFi no boot:
 |-------------|--------|----------|
 | VIN | 5V | NodeMCU (via power bank USB) |
 | VU | ~4,7V | TB6612 VCC + STBY |
-| 3V3 | 3,3V | HC-SR04 VCC, HW-201 VCC |
+| 3V3 | 3,3V | HC-SR04 VCC, HW-201 VCC (ambos) |
 | GND | 0V | Comum a todos os módulos |
 
 ---
@@ -254,7 +254,7 @@ walleiro/
 | TB6612FNG | 1 | Driver ponte H MOSFET |
 | Motor DC 3-6V | 2 | Tração diferencial |
 | HC-SR04 | 1 | Sensor ultrassônico |
-| HW-201 | 1 | Sensor infravermelho |
+| HW-201 | 2 | Sensor infravermelho (resistor ladder no ADC) |
 | Power Bank 5V | 1 | Alimentação |
 
 ---

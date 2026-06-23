@@ -1,0 +1,12 @@
+{
+  "name": "LineFollower",
+  "version": "0.1.0",
+  "description": "Leitura de sensores IR (HW-201) via resistor ladder no ADC do ESP8266 para line follower",
+  "keywords": "ir, line, hw-201, adc, resistor-ladder",
+  "authors": {
+    "name": "Equipe Walleiro"
+  },
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": ["espressif8266"]
+}

@@ -25,6 +25,6 @@
 #define BIN2          2   // D4
 #define PWMB         15   // D8 (PWM)
 
-// Sensor infravermelho HW-201 (desativado por enquanto)
-// #define IR_PIN    16   // D0
+// Sensor infravermelho HW-201 via resistor ladder no ADC
+#define LINE_SENSOR   A0   // ADC
 

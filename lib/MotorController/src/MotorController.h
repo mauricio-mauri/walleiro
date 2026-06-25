@@ -46,11 +46,20 @@ public:
   /// Ajusta a velocidade de ambos os motores (0–255).
   void setSpeed(uint8_t speed);
 
-  /// Retorna a velocidade atual.
-  uint8_t getSpeed() const;
+  /// Ajusta a velocidade do motor A (esquerdo) individualmente.
+  void setSpeedA(uint8_t speed);
+
+  /// Ajusta a velocidade do motor B (direito) individualmente.
+  void setSpeedB(uint8_t speed);
+
+  /// Retorna a velocidade do motor A.
+  uint8_t getSpeedA() const;
+
+  /// Retorna a velocidade do motor B.
+  uint8_t getSpeedB() const;
 
 private:
   uint8_t _in1, _in2, _ena;
   uint8_t _in3, _in4, _enb;
-  uint8_t _speed;
+  uint8_t _speedA, _speedB;
 };

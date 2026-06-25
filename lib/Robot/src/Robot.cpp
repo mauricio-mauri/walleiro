@@ -1,55 +1,101 @@
 #include "Robot.h"
+#include <DebugLog.h>
 
-#ifdef ESP8266
-  #include <DebugLog.h>
-  #define LOG Debug
-#else
-  #define LOG Serial
-#endif
-
-Robot::Robot(MotorController& motors, UltrasonicSensor& sensor, int irPin)
-  : _motors(motors), _sensor(sensor), _irPin(irPin) {}
+Robot::Robot(MotorController& motors, UltrasonicSensor& sensor,
+             LineFollower& lineSensor, int servoPin)
+  : _motors(motors), _sensor(sensor), _line(lineSensor),
+    _servoPin(servoPin) {}
 
 void Robot::setup() {
   _motors.begin();
-  _motors.setSpeed(VELOCIDADE);
+  _motors.setSpeed(VEL_BASE);
   _motors.stop();
-  if (_irPin >= 0) {
-    pinMode(_irPin, INPUT);
+
+  if (_servoPin >= 0) {
+    _servo.attach(_servoPin);
+    _servo.write(ANGLE_CENTER);
+    delay(500);
   }
-  LOG.println("Robô iniciado.");
+
+  Debug.println("Robô iniciado.");
 }
 
 void Robot::update() {
-  // ─── Sensor IR (obstáculo imediato) ───────────────
-  if (_irPin >= 0 && digitalRead(_irPin) == LOW) {
-    LOG.println("IR: obstáculo detectado!");
+  unsigned int distancia = _sensor.readDistance();
+
+  // ─── Prioridade 1: obstáculo ───────────────────────────
+  if (distancia > 0 && distancia < DIST_MINIMA) {
+    Debug.println("Obstáculo! Escaneando...");
     _motors.stop();
-    delay(TEMPO_PAUSA);
-    _motors.turnLeft();
-    delay(TEMPO_CURVA);
+
+    if (_servoPin >= 0) {
+      // Mede lado esquerdo
+      _servo.write(ANGLE_LEFT);
+      delay(300);
+      unsigned int distEsq = _sensor.readDistance();
+
+      // Mede lado direito
+      _servo.write(ANGLE_RIGHT);
+      delay(300);
+      unsigned int distDir = _sensor.readDistance();
+
+      // Escolhe o lado com mais espaço
+      Debug.print("Esq: ");
+      Debug.print(distEsq);
+      Debug.print("  Dir: ");
+      Debug.println(distDir);
+
+      if (distDir > distEsq) {
+        _motors.setSpeed(VEL_BASE);
+        _motors.turnRight();
+      } else {
+        _motors.setSpeed(VEL_BASE);
+        _motors.turnLeft();
+      }
+      delay(TEMPO_CURVA);
+
+      // Volta ao centro
+      _servo.write(ANGLE_CENTER);
+      delay(300);
+    } else {
+      // Sem servo: desvia no tempo fixo
+      delay(TEMPO_PAUSA);
+      _motors.setSpeed(VEL_BASE);
+      _motors.turnLeft();
+      delay(TEMPO_CURVA);
+    }
+
     return;
   }
 
-  // ─── Sensor ultrassônico ─────────────────────────
-  unsigned int distancia = _sensor.readDistance();
+  // ─── Prioridade 2: seguir linha ─────────────────────────
+  int estado = _line.read();
 
-  LOG.print("Distancia: ");
-  LOG.print(distancia);
-  LOG.println(" cm");
+  Debug.print("Linha: ");
+  Debug.println(estado);
 
-  if (distancia == 0 || distancia > DIST_REFERENCIA + 10) {
-    // Sem leitura ou muito longe: avança
-    _motors.forward();
-  } else if (distancia < DIST_MINIMA) {
-    // Obstáculo próximo: para e vira
-    _motors.stop();
-    delay(TEMPO_PAUSA);
-    _motors.turnLeft();
-    delay(TEMPO_CURVA);
-  } else {
-    // Na faixa ideal: segue em frente
-    _motors.forward();
+  switch (estado) {
+    case 0:  // FORA DA LINHA — segue reto tentando reencontrar
+      _motors.setSpeed(VEL_BASE);
+      _motors.forward();
+      break;
+
+    case 1:  // ESQUERDA — corrige para a esquerda (motor direito mais fraco)
+      _motors.setSpeedA(VEL_BASE + VEL_CURVA);
+      _motors.setSpeedB(VEL_BASE - VEL_CURVA);
+      _motors.forward();
+      break;
+
+    case 2:  // DIREITA — corrige para a direita (motor esquerdo mais fraco)
+      _motors.setSpeedA(VEL_BASE - VEL_CURVA);
+      _motors.setSpeedB(VEL_BASE + VEL_CURVA);
+      _motors.forward();
+      break;
+
+    case 3:  // MEIO DA LINHA — segue reto
+      _motors.setSpeed(VEL_BASE);
+      _motors.forward();
+      break;
   }
 
   delay(50);

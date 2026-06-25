@@ -18,7 +18,7 @@ imediatamente abaixo.
 │   (TB6612FNG)         │   (HC-SR04 + NewPing)    │
 ├───────────────────────┴──────────────────────────┤
 │                pins.h / DebugLog                 │
-│   #ifdef ESP32 / #else (ESP8266)  +  WiFi AP    │
+│              Definição de pinos + WiFi AP        │
 ├──────────────────────────────────────────────────┤
 │              Arduino Framework                   │
 │   digitalWrite, analogWrite, Print, etc.         │
@@ -36,32 +36,6 @@ Nenhum módulo da camada superior é conhecido pelos módulos inferiores.
 
 ---
 
-## Por que #ifdef ESP32?
-
-O projeto compila para duas placas diferentes:
-
-| Placa | Env PlatformIO | Uso |
-|-------|----------------|-----|
-| ESP32 DevKit v4 | `esp32_sim` | Simulação Wokwi |
-| NodeMCU v3 (ESP8266) | `nodemcuv2` | Placa física |
-
-Os **GPIOs são diferentes** entre as duas, e as bibliotecas de WiFi também
-(`WiFi.h` no ESP32, `ESP8266WiFi.h` no ESP8266).
-
-A estratégia adotada foi:
-
-1. **Centralizar as diferenças em `pins.h`** — os `#define` de cada GPIO
-   ficam num único arquivo, com `#ifdef ESP32`.
-2. **O resto do código não sabe qual placa é.** `MotorController`,
-   `UltrasonicSensor` e `Robot` recebem os valores de `pins.h` e ponto final.
-3. **`main.cpp` inclui a WiFi certa** antes dos módulos, pro caso de
-   precisarmos de conectividade no futuro.
-
-Se amanhã quisermos suportar ESP32-C3 ou outra placa, é só adicionar
-mais um `#elif` em `pins.h`.
-
----
-
 ## Módulos
 
 ### `lib/DebugLog`
@@ -75,7 +49,7 @@ Encapsula a saída de depuração com três destinos simultâneos:
 Implementa a interface `Print` do Arduino — tem `print()`, `println()`
 etc., iguais ao `Serial`. Toda chamada vai pros três destinos.
 
-**Só compilado no ESP8266.** No ESP32 (Wokwi) usa `Serial` direto.
+**Exclusivo para ESP8266.** Dependente de `ESP8266WiFi.h` e `ESP8266WebServer.h`.
 
 ### `lib/MotorController`
 

@@ -20,6 +20,7 @@
 - Display 7 segmentos
 - Capacitor
 - Motor DC 3-6V 200 RPM (reserva)
+- HW-201 - Sensor infravermelho (4 disponíveis)
 
 ---
 
@@ -28,10 +29,11 @@
 ```
 Power Bank 5V
   │
-  ├── USB micro ── NodeMCU VIN (via conector USB)
-  │
   └── Cabo USB cortado
-        ├── VERMELHO ── TB6612 VM  (+5V motores)
+        ├── VERMELHO ── 5V (breadboard +)
+        │                ├── NodeMCU VIN
+        │                └── TB6612 VM
+        │
         └── PRETO    ── GND comum  (breadboard -)
 ```
 
@@ -49,7 +51,7 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 | Com 5V | Com 3.3V |
 |--------|----------|
 | ECHO e OUT = 5V → precisa de divisor de tensão | ECHO e OUT = 3.3V → direto no GPIO ✅ |
-| Alcance total do HC-SR04 (~4m) | Alcance reduzido (~1m — suficiente) |
+| Alcance total do HC-SR04 (~4m) | Alcance reduzido (~2m) |
 
 **Ganho:** sem resistores extras, sem risco de queimar o pino do ESP8266.
 
@@ -61,8 +63,8 @@ HC-SR04 e HW-201 alimentados com **3.3V** em vez de 5V:
 
 | Pino | GPIO | Destino | Componente | Fio |
 |------|------|---------|------------|-----|
-| VIN | — | 5V | Power Bank (USB) | Vermelho |
-| GND | — | GND | Power Bank / breadboard | Preto |
+| VIN | — | 5V | Power Bank | Vermelho |
+| GND | — | GND | Power Bank | Preto |
 | 3V3 | — | VCC, VCC | HC-SR04, HW-201 | Marrom |
 | VU | — | VCC, STBY | TB6612FNG | Branco |
 | A0 | — | ADC (resistor ladder) | HW-201 (IR_L + IR_R) | Ciano |
